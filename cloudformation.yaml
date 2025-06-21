@@ -81,6 +81,11 @@ Parameters:
   EksSshKeyPairName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair for SSH access to EKS worker nodes.
+  # UPDATED: Default value for EKSAdminIAMArn
+  EKSAdminIAMArn:
+    Type: String
+    Default: arn:aws:iam::557690580165:user/terrafrom_user # Set to the provided IAM user ARN
+    Description: The ARN of the IAM User or Role to grant EKS cluster admin permissions to.
 
   # --- RDS Database Parameters ---
   DbInstanceIdentifier:
@@ -99,7 +104,6 @@ Parameters:
     Type: Number
     Default: 20
     Description: The amount of storage (GB) to allocate to the DB instance.
-  # NEW PARAMETER: This will hold the name of your Secrets Manager secret
   DbSecretName:
     Type: String
     Description: The name or ARN of the AWS Secrets Manager secret containing DB credentials.
@@ -494,6 +498,15 @@ Resources:
           - !Ref PublicSubnet2
           - !Ref PrivateAppSubnet
           - !Ref PrivateAppSubnet2
+      AccessConfig:
+        AuthenticationMode: API_AND_CONFIG_MAP
+        BootstrapClusterCreatorAdminPermissions: true
+      AccessEntries:
+        - PrincipalArn: !Ref EKSAdminIAMArn
+          AccessPolicies:
+            - PolicyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+              AccessScope:
+                Type: cluster
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-EksCluster
