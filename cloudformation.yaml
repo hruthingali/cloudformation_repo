@@ -81,11 +81,6 @@ Parameters:
   EksSshKeyPairName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair for SSH access to EKS worker nodes.
-  # UPDATED: Default value for EKSAdminIAMArn
-  EKSAdminIAMArn:
-    Type: String
-    Default: arn:aws:iam::557690580165:user/terrafrom_user # Set to the provided IAM user ARN
-    Description: The ARN of the IAM User or Role to grant EKS cluster admin permissions to.
 
   # --- RDS Database Parameters ---
   DbInstanceIdentifier:
@@ -104,35 +99,13 @@ Parameters:
     Type: Number
     Default: 20
     Description: The amount of storage (GB) to allocate to the DB instance.
+  # NEW PARAMETER: This will hold the name of your Secrets Manager secret
   DbSecretName:
     Type: String
     Description: The name or ARN of the AWS Secrets Manager secret containing DB credentials.
     Default: expense_rds_credentials # <<-- IMPORTANT: This default value must exactly match your secret name
 
 Resources:
-  # --- NEW: CloudFormation Deployment Role ---
-  CloudFormationDeployRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - cloudformation.amazonaws.com # Allows CloudFormation to assume this role
-                - codepipeline.amazonaws.com # Allows CodePipeline to assume this role if used directly
-            Action:
-              - sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess # Grants administrator access
-      Description: IAM role for CloudFormation to deploy resources with AdministratorAccess.
-      Tags:
-        - Key: Name
-          Value: !Sub ${EnvironmentName}-CloudFormationDeployRole
-        - Key: Project
-          Value: !Ref ProjectTag
-
   # --- 1. VPC and Networking Components (Foundation) ---
   MyVPC:
     Type: AWS::EC2::VPC
@@ -498,15 +471,6 @@ Resources:
           - !Ref PublicSubnet2
           - !Ref PrivateAppSubnet
           - !Ref PrivateAppSubnet2
-      AccessConfig:
-        AuthenticationMode: API_AND_CONFIG_MAP
-        BootstrapClusterCreatorAdminPermissions: true
-      AccessEntries:
-        - PrincipalArn: !Ref EKSAdminIAMArn
-          AccessPolicies:
-            - PolicyArn: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
-              AccessScope:
-                Type: cluster
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-EksCluster
@@ -734,8 +698,3 @@ Outputs:
     Value: !GetAtt EksCluster.Endpoint
     Export:
       Name: !Sub ${AWS::StackName}-EksClusterEndpoint
-  CloudFormationDeployRoleArn:
-    Description: ARN of the CloudFormation deployment role with AdministratorAccess.
-    Value: !GetAtt CloudFormationDeployRole.Arn
-    Export:
-      Name: !Sub ${AWS::StackName}-CloudFormationDeployRoleArn
