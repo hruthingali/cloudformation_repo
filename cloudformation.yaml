@@ -482,8 +482,8 @@ Resources:
     Properties:
       DBSubnetGroupDescription: Subnet group for RDS instance
       SubnetIds:
-        - !Ref PrivateDbSubnet     # Subnet in us-west-1a
-        - !Ref PrivateDbSubnet2    # Subnet in us-west-1c
+        - !Ref PrivateDbSubnet      # Subnet in us-west-1a
+        - !Ref PrivateDbSubnet2     # Subnet in us-west-1c
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-RDSDBSubnetGroup # Corrected duplicate Value line
@@ -504,7 +504,7 @@ Resources:
       DBSubnetGroupName: !Ref MyRDSDBSubnetGroup
       VPCSecurityGroups:
         - !GetAtt RdsSecurityGroup.GroupId
-      PubliclyAccessible: false
+      PubliclyAccessible: true # Changed from false to true
       BackupRetentionPeriod: 7
       MultiAZ: false
       DBName: !Ref DbName
