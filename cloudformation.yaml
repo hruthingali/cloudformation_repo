@@ -97,11 +97,7 @@ Parameters:
     Type: Number
     Default: 20
     Description: The amount of storage (GB) to allocate to the DB instance.
-  # NEW PARAMETER: This will hold the name of your Secrets Manager secret
-  DbSecretName:
-    Type: String
-    Description: The name or ARN of the AWS Secrets Manager secret containing DB credentials.
-    Default: expense_rds_credentials # <<-- IMPORTANT: This default value must exactly match your secret name
+  # REMOVED: DbSecretName parameter as credentials are now hardcoded
 
 Resources:
   # --- 1. VPC and Networking Components (Foundation) ---
@@ -487,6 +483,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-RDSDBSubnetGroup
+          Value: !Sub ${EnvironmentName}-RDSDBSubnetGroup
         - Key: Project
           Value: !Ref ProjectTag
 
@@ -497,9 +494,8 @@ Resources:
       DBInstanceIdentifier: !Ref DbInstanceIdentifier
       Engine: mysql
       EngineVersion: 8.0.32
-      # Removed DbUsername and DbPassword parameters, now using dynamic references:
-      MasterUsername: "{{resolve:secretsmanager:${DbSecretName}:username}}"
-      MasterUserPassword: "{{resolve:secretsmanager:${DbSecretName}:password}}"
+      MasterUsername: admin # Hardcoded username
+      MasterUserPassword: password123 # Hardcoded password - REMOVE THIS FOR PRODUCTION!
       DBInstanceClass: !Ref DbInstanceClass
       AllocatedStorage: !Ref DbAllocatedStorage
       DBSubnetGroupName: !Ref MyRDSDBSubnetGroup
