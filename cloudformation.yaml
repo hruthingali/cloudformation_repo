@@ -465,6 +465,10 @@ Resources:
           - !Ref PublicSubnet2
           - !Ref PrivateAppSubnet
           - !Ref PrivateAppSubnet2
+      # ADDED AccessConfig for EKS Cluster
+      AccessConfig:
+        AuthenticationMode: API_AND_CONFIG_MAP
+        BootstrapClusterCreatorAdminPermissions: true
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-EksCluster
@@ -482,8 +486,7 @@ Resources:
         - !Ref PrivateDbSubnet2    # Subnet in us-west-1c
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-RDSDBSubnetGroup
-          Value: !Sub ${EnvironmentName}-RDSDBSubnetGroup
+          Value: !Sub ${EnvironmentName}-RDSDBSubnetGroup # Corrected duplicate Value line
         - Key: Project
           Value: !Ref ProjectTag
 
