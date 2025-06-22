@@ -78,24 +78,13 @@ Parameters:
     Type: Number
     Default: 3
     Description: Maximum number of EKS worker nodes.
-  EksSshKeyPairName:
-    Type: AWS::EC2::KeyPair::KeyName
-    Description: Name of an existing EC2 KeyPair for SSH access to EKS worker nodes.
+  # REMOVED: EksSshKeyPairName parameter
 
   # --- RDS Database Parameters ---
   DbInstanceIdentifier:
     Type: String
     Default: expense-tracker-db
     Description: Identifier for the RDS DB instance.
-  DbUsername:
-    Type: String
-    Default: admin
-    Description: Master username for the RDS DB instance.
-  DbPassword:
-    Type: String
-    NoEcho: true
-    Default: SuperSecurePassword123! # <<-- IMPORTANT: CHANGE THIS TO A SECURE, UNIQUE PASSWORD
-    Description: Master password for the RDS DB instance.
   DbName:
     Type: String
     Default: expensetracker
@@ -108,6 +97,11 @@ Parameters:
     Type: Number
     Default: 20
     Description: The amount of storage (GB) to allocate to the DB instance.
+  # NEW PARAMETER: This will hold the name of your Secrets Manager secret
+  DbSecretName:
+    Type: String
+    Description: The name or ARN of the AWS Secrets Manager secret containing DB credentials.
+    Default: expense_rds_credentials # <<-- IMPORTANT: This default value must exactly match your secret name
 
 Resources:
   # --- 1. VPC and Networking Components (Foundation) ---
@@ -475,9 +469,6 @@ Resources:
           - !Ref PublicSubnet2
           - !Ref PrivateAppSubnet
           - !Ref PrivateAppSubnet2
-      AccessConfig:
-        AuthenticationMode: API_AND_CONFIG_MAP
-        BootstrapClusterCreatorAdminPermissions: true
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-EksCluster
@@ -491,8 +482,8 @@ Resources:
     Properties:
       DBSubnetGroupDescription: Subnet group for RDS instance
       SubnetIds:
-        - !Ref PrivateDbSubnet   # Subnet in us-west-1a
-        - !Ref PrivateDbSubnet2  # Subnet in us-west-1c
+        - !Ref PrivateDbSubnet     # Subnet in us-west-1a
+        - !Ref PrivateDbSubnet2    # Subnet in us-west-1c
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-RDSDBSubnetGroup
@@ -506,8 +497,9 @@ Resources:
       DBInstanceIdentifier: !Ref DbInstanceIdentifier
       Engine: mysql
       EngineVersion: 8.0.32
-      MasterUsername: !Ref DbUsername
-      MasterUserPassword: !Ref DbPassword
+      # Removed DbUsername and DbPassword parameters, now using dynamic references:
+      MasterUsername: "{{resolve:secretsmanager:${DbSecretName}:username}}"
+      MasterUserPassword: "{{resolve:secretsmanager:${DbSecretName}:password}}"
       DBInstanceClass: !Ref DbInstanceClass
       AllocatedStorage: !Ref DbAllocatedStorage
       DBSubnetGroupName: !Ref MyRDSDBSubnetGroup
@@ -624,7 +616,7 @@ Resources:
         MaxSize: !Ref EksNodeMaxSize
       AmiType: AL2_x86_64
       RemoteAccess:
-        Ec2SshKey: !Ref EksSshKeyPairName
+        Ec2SshKey: mykey # Hardcoded the key pair name here
         SourceSecurityGroups:
           - !GetAtt EksWorkerNodeSecurityGroup.GroupId
       Labels:
