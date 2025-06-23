@@ -48,14 +48,6 @@ Parameters:
     Type: String
     Default: 10.0.4.0/24
     Description: CIDR block for the Private Database Subnet (RDS MySQL) in AZ-c.
-  AvailabilityZone:
-    Type: String
-    Default: us-west-1a # Set to us-west-1a
-    Description: The Availability Zone to deploy primary resources into (AZ-a).
-  AvailabilityZone2:
-    Type: String
-    Default: us-west-1c # Corrected to us-west-1c based on your AWS account's available AZs
-    Description: The second Availability Zone for RDS and EKS (AZ-c).
 
   # --- EKS Cluster Parameters ---
   EksClusterName:
@@ -132,7 +124,7 @@ Resources:
       VpcId: !Ref MyVPC
       CidrBlock: !Ref PublicSubnetCidr
       MapPublicIpOnLaunch: true
-      AvailabilityZone: !Ref AvailabilityZone # us-west-1a
+      AvailabilityZone: !Select [ 0, !GetAZs '' ] # Dynamically select the first AZ
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-PublicSubnet-a
@@ -149,7 +141,7 @@ Resources:
       VpcId: !Ref MyVPC
       CidrBlock: !Ref PublicSubnetCidr2
       MapPublicIpOnLaunch: true
-      AvailabilityZone: !Ref AvailabilityZone2 # us-west-1c
+      AvailabilityZone: !Select [ 1, !GetAZs '' ] # Dynamically select the second AZ
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-PublicSubnet-c
@@ -165,7 +157,7 @@ Resources:
     Properties:
       VpcId: !Ref MyVPC
       CidrBlock: !Ref PrivateAppSubnetCidr
-      AvailabilityZone: !Ref AvailabilityZone # us-west-1a
+      AvailabilityZone: !Select [ 0, !GetAZs '' ] # Dynamically select the first AZ
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-PrivateAppSubnet-a
@@ -181,7 +173,7 @@ Resources:
     Properties:
       VpcId: !Ref MyVPC
       CidrBlock: !Ref PrivateAppSubnetCidr2
-      AvailabilityZone: !Ref AvailabilityZone2 # us-west-1c
+      AvailabilityZone: !Select [ 1, !GetAZs '' ] # Dynamically select the second AZ
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-PrivateAppSubnet-c
@@ -197,7 +189,7 @@ Resources:
     Properties:
       VpcId: !Ref MyVPC
       CidrBlock: !Ref PrivateDbSubnetCidr
-      AvailabilityZone: !Ref AvailabilityZone # us-west-1a
+      AvailabilityZone: !Select [ 0, !GetAZs '' ] # Dynamically select the first AZ
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-PrivateDbSubnet-a
@@ -209,7 +201,7 @@ Resources:
     Properties:
       VpcId: !Ref MyVPC
       CidrBlock: !Ref PrivateDbSubnetCidr2
-      AvailabilityZone: !Ref AvailabilityZone2 # us-west-1c
+      AvailabilityZone: !Select [ 1, !GetAZs '' ] # Dynamically select the second AZ
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName}-PrivateDbSubnet-c
@@ -480,11 +472,11 @@ Resources:
     Properties:
       DBSubnetGroupDescription: Subnet group for RDS instance
       SubnetIds:
-        - !Ref PrivateDbSubnet       # Subnet in us-west-1a
-        - !Ref PrivateDbSubnet2       # Subnet in us-west-1c
+        - !Ref PrivateDbSubnet        # Subnet in first AZ
+        - !Ref PrivateDbSubnet2       # Subnet in second AZ
       Tags:
         - Key: Name
-          Value: !Sub ${EnvironmentName}-RDSDBSubnetGroup # Corrected duplicate Value line
+          Value: !Sub ${EnvironmentName}-RDSDBSubnetGroup
         - Key: Project
           Value: !Ref ProjectTag
 
@@ -632,32 +624,32 @@ Outputs:
     Export:
       Name: !Sub ${AWS::StackName}-VPCId
   PublicSubnetId:
-    Description: The ID of the Public Subnet in us-west-1a
+    Description: The ID of the Public Subnet in the first AZ
     Value: !Ref PublicSubnet
     Export:
       Name: !Sub ${AWS::StackName}-PublicSubnetId
   PublicSubnetId2:
-    Description: The ID of the Public Subnet in us-west-1c
+    Description: The ID of the Public Subnet in the second AZ
     Value: !Ref PublicSubnet2
     Export:
       Name: !Sub ${AWS::StackName}-PublicSubnetId2
   PrivateAppSubnetId:
-    Description: The ID of the Private Application Subnet in us-west-1a
+    Description: The ID of the Private Application Subnet in the first AZ
     Value: !Ref PrivateAppSubnet
     Export:
       Name: !Sub ${AWS::StackName}-PrivateAppSubnetId
   PrivateAppSubnetId2:
-    Description: The ID of the Private Application Subnet in us-west-1c
+    Description: The ID of the Private Application Subnet in the second AZ
     Value: !Ref PrivateAppSubnet2
     Export:
       Name: !Sub ${AWS::StackName}-PrivateAppSubnetId2
   PrivateDbSubnetId:
-    Description: The ID of the Private Database Subnet in us-west-1a
+    Description: The ID of the Private Database Subnet in the first AZ
     Value: !Ref PrivateDbSubnet
     Export:
       Name: !Sub ${AWS::StackName}-PrivateDbSubnetId
   PrivateDbSubnetId2:
-    Description: The ID of the Private Database Subnet in us-west-1c
+    Description: The ID of the Private Database Subnet in the second AZ
     Value: !Ref PrivateDbSubnet2
     Export:
       Name: !Sub ${AWS::StackName}-PrivateDbSubnetId2
